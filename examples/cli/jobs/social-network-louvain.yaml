@@ -1,0 +1,21 @@
+# Louvain community detection on a social network (Person -KNOWS-> Person).
+# Graph: graphs/social-network.json (fixed) or graphs/random-social-network.yaml.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+projection:
+  graph_name: social
+  query: |
+    MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+    RETURN gds.graph.project.remote(source, target, {
+      sourceNodeLabels: labels(source),
+      targetNodeLabels: labels(target),
+      relationshipType: type(rel)
+    })
+algorithms:
+  - name: louvain
+    mode: mutate
+    mutate_property: community
+writeback:
+  node_properties: [community]

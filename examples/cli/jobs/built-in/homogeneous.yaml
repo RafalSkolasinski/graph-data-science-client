@@ -1,0 +1,25 @@
+# Job for the built-in `homogeneous` graph (Node -REL-> Node).
+#   gds database upload homogeneous --overwrite
+#   gds session run --config jobs/built-in/homogeneous.yaml --overwrite-graph
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+projection:
+  graph_name: homogeneous
+  query: |
+    MATCH (source:Node)-[rel:REL]->(target:Node)
+    RETURN gds.graph.project.remote(source, target, {
+      sourceNodeLabels: labels(source),
+      targetNodeLabels: labels(target),
+      relationshipType: type(rel),
+      relationshipProperties: rel { .weight }
+    })
+algorithms:
+  - name: pageRank
+    mode: mutate
+    mutate_property: pagerank
+    parameters:
+      relationship_weight_property: weight
+writeback:
+  node_properties: [pagerank]

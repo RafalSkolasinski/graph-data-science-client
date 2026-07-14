@@ -1,0 +1,23 @@
+# PageRank on a web graph (Page -LINKS-> Page): important pages get high rank.
+# Graph: graphs/web-graph.json.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+projection:
+  graph_name: pages
+  query: |
+    MATCH (source:Page)-[rel:LINKS]->(target:Page)
+    RETURN gds.graph.project.remote(source, target, {
+      sourceNodeLabels: labels(source),
+      targetNodeLabels: labels(target),
+      relationshipType: type(rel)
+    })
+algorithms:
+  - name: pageRank
+    mode: mutate
+    mutate_property: pagerank
+    parameters:
+      max_iterations: 20
+writeback:
+  node_properties: [pagerank]
