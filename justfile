@@ -2,6 +2,12 @@ style skip_notebooks="false":
      uv sync --frozen
      SKIP_NOTEBOOKS={{skip_notebooks}} ./scripts/makestyle && ./scripts/checkstyle
 
+# Install the `gds` CLI (editable, with its extra deps) as a uv tool.
+# `uv tool install -e .` alone would skip the `cli` extra and produce a `gds`
+# command that fails at runtime with "No module named 'typer'".
+install-cli:
+    uv tool install --editable ".[cli]" --force
+
 # Comprehensive CI-style check: Python style, notebook docs, and Ruby style
 checkstyle-all:
     #!/usr/bin/env bash

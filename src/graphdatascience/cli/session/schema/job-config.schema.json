@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neo4j.io/gds-jobs/job-config.schema.json",
+  "title": "GDS Job Config",
+  "description": "Standardized config for a GDS job: project a graph, run an ordered list of algorithms on it, write results back. Credentials are never part of this config; they come from environment variables.",
+  "type": "object",
+  "required": ["session", "projection", "algorithms"],
+  "additionalProperties": false,
+  "properties": {
+    "session": {
+      "type": "object",
+      "required": ["name", "memory", "ttl_minutes"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "get_or_create key; idempotent per name. Reuse one name across jobs to reuse the session."
+        },
+        "memory": {
+          "type": "string",
+          "description": "Session memory, e.g. '2GB', '4GB'. Required (be explicit about session size)."
+        },
+        "ttl_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Session time-to-live in minutes. Required (be explicit)."
+        }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "required": ["graph_name", "query"],
+      "additionalProperties": false,
+      "properties": {
+        "graph_name": {
+          "type": "string",
+          "description": "Name of the in-session projected graph."
+        },
+        "query": {
+          "type": "string",
+          "description": "Remote Cypher projection query returning gds.graph.project.remote(...)."
+        }
+      }
+    },
+    "algorithms": {
+      "type": "array",
+      "description": "Ordered list of algorithms; each runs in sequence on the same in-session graph, so a later step can consume an earlier step's mutated property.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Algorithm name, mapped to a gds client method (e.g. pageRank -> gds.page_rank)."
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["mutate", "write"],
+            "description": "mutate keeps results in the session graph; write persists them to the DB directly."
+          },
+          "mutate_property": {
+            "type": "string",
+            "description": "Property name for mutate mode (required when mode=mutate)."
+          },
+          "write_property": {
+            "type": "string",
+            "description": "Property name for write mode (required when mode=write)."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Algorithm parameters passed as keyword args to the gds client method, so use snake_case (e.g. max_iterations, damping_factor, embedding_dimension).",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "writeback": {
+      "type": "object",
+      "description": "Optional final writeback of mutated node properties to the DB.",
+      "additionalProperties": false,
+      "properties": {
+        "node_properties": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Mutated node properties to write back via gds.graph.node_properties.write."
+        }
+      }
+    }
+  }
+}

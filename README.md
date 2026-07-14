@@ -87,6 +87,36 @@ Full end-to-end examples in Jupyter ready-to-run notebooks can be found in the [
 * [Perform inference using pre-trained KGE models](examples/kge-predict-transe-pyg-train.ipynb)
 
 
+## Command-line interface (`gds`)
+
+`graphdatascience` also ships a `gds` command-line tool for seeding/inspecting test
+data in a Neo4j database and for running a standardized GDS job (project ->
+algorithms -> writeback) against a managed Aura GDS session. Its dependencies
+(`typer`, `rich`, `pyyaml`, `jsonschema`) are not part of the core library, so they
+must be requested explicitly via the `cli` extra:
+
+```bash
+# regular install
+pip install "graphdatascience[cli]"
+
+# install as an isolated tool (e.g. from a local checkout, for development)
+uv tool install --editable ".[cli]"
+```
+
+Installing without `[cli]` (e.g. plain `pip install -e .` or `uv tool install -e .`)
+still creates the `gds` command, but running it fails with
+`ModuleNotFoundError: No module named 'typer'` — the extra is required, not optional
+sugar, despite the name.
+
+```bash
+gds database upload|summary|fetch|delete   # seed/inspect test data in a database
+gds session create|delete|list             # manage a managed Aura GDS session
+gds session run|project|algorithms|writeback|drop  # run a job against it
+```
+
+Run `gds --help`, `gds database --help`, or `gds session --help` for full details.
+
+
 ## Documentation
 
 The primary source for learning everything about the GDS Python Client is the manual, hosted at https://neo4j.com/docs/graph-data-science-client/current/.

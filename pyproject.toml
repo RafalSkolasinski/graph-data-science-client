@@ -51,6 +51,16 @@ BugTracker = "https://github.com/neo4j/graph-data-science-client/issues"
 networkx = ["networkx >= 2.0, < 4.0"]
 ogb = ["ogb >= 1.0, < 2.0"]
 rust-ext = ["neo4j-rust-ext >= 5.26.0, < 7.0"]
+cli = [
+    "typer >= 0.12, < 1.0",
+    "rich >= 13, < 15",
+    "pyyaml >= 6.0, < 7.0",
+    "jsonschema >= 4.18, < 5.0",
+    "python-dotenv >= 1.0, < 2.0",
+]
+
+[project.scripts]
+gds = "graphdatascience.cli.app:app"
 
 
 [dependency-groups]
@@ -75,6 +85,12 @@ dev-base = [
     "types-python-dateutil",
     "python-dotenv<2",
     "types-colorama",
+    "typer >= 0.12, < 1.0",
+    "rich >= 13, < 15",
+    "pyyaml >= 6.0, < 7.0",
+    "jsonschema >= 4.18, < 5.0",
+    "types-pyyaml",
+    "types-jsonschema",
 ]
 test = [
     "pytest == 9.1.1",
@@ -145,7 +161,7 @@ include = ["graphdatascience*"]
 version = { attr = "graphdatascience.version.__version__" }
 
 [tool.setuptools.package-data]
-graphdatascience = ["py.typed", "resources/**/*.gzip"]
+graphdatascience = ["py.typed", "resources/**/*.gzip", "cli/session/schema/*.json"]
 
 [tool.ruff]
 line-length = 120
