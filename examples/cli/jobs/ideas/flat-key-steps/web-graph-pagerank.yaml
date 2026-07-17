@@ -1,0 +1,37 @@
+# PageRank on a web graph (Page -LINKS-> Page): important pages get high rank.
+# Recreation of jobs/web-graph-pagerank.yaml using the "flat-key" step format.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - cypher:
+      graph: pages
+      query: |
+        MATCH (source:Page)-[rel:LINKS]->(target:Page)
+        RETURN gds.graph.project.remote(source, target, {
+          sourceNodeLabels: labels(source),
+          targetNodeLabels: labels(target),
+          relationshipType: type(rel)
+        })
+
+steps:
+  - name: Project the web graph
+    project_graph: pages
+
+  - name: Run PageRank
+    algorithm: pageRank
+    graph: pages
+    configuration:
+      max_iterations: 20
+    mode:
+      name: mutate
+      property: pagerank
+
+  - name: Write pagerank back to the database
+    write_back: pages
+    node_properties: [pagerank]
+
+  - name: Drop the graph
+    drop_graph: pages

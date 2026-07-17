@@ -1,0 +1,44 @@
+# Two graphs, each used once. No lifecycle to declare: the runtime drops
+# `social` once nothing later references it - even before `pages` is projected.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - graph: social
+    cypher: |
+      MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+  - graph: pages
+    cypher: |
+      MATCH (source:Page)-[rel:LINKS]->(target:Page)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+
+algorithms:
+  - name: louvain
+    graph: social
+    mode: mutate
+    mutate_property: community
+
+  - name: pageRank
+    graph: pages
+    mode: mutate
+    mutate_property: pagerank
+    parameters:
+      max_iterations: 20
+
+writebacks:
+  - graph: social
+    node_properties: [community]
+
+  - graph: pages
+    node_properties: [pagerank]

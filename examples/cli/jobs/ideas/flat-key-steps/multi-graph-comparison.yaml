@@ -1,0 +1,62 @@
+# Project two independent graphs in one job and run a different algorithm on each.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - cypher:
+      graph: social
+      query: |
+        MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+        RETURN gds.graph.project.remote(source, target, {
+          sourceNodeLabels: labels(source),
+          targetNodeLabels: labels(target),
+          relationshipType: type(rel)
+        })
+  - cypher:
+      graph: pages
+      query: |
+        MATCH (source:Page)-[rel:LINKS]->(target:Page)
+        RETURN gds.graph.project.remote(source, target, {
+          sourceNodeLabels: labels(source),
+          targetNodeLabels: labels(target),
+          relationshipType: type(rel)
+        })
+
+steps:
+  - name: Project the social graph
+    project_graph: social
+
+  - name: Project the web graph
+    project_graph: pages
+
+  - name: Run Louvain on the social graph
+    algorithm: louvain
+    graph: social
+    mode:
+      name: mutate
+      property: community
+
+  - name: Run PageRank on the web graph
+    algorithm: pageRank
+    graph: pages
+    configuration:
+      max_iterations: 20
+    mode:
+      name: mutate
+      property: pagerank
+
+  - name: Write community back to the database
+    write_back: social
+    node_properties: [community]
+
+  - name: Write pagerank back to the database
+    write_back: pages
+    node_properties: [pagerank]
+
+  - name: Drop the social graph
+    drop_graph: social
+
+  - name: Drop the web graph
+    drop_graph: pages

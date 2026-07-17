@@ -1,0 +1,41 @@
+# FastPath temporal embeddings over Entity -HAS_EVENT-> Event.
+# NOTE: labels are explicit (['Entity']/['Event']) since gds-testdata's `Dev` label breaks FastPath otherwise.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - graph: events
+    cypher: |
+      MATCH (source:Entity)-[rel:HAS_EVENT]->(target:Event)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeProperties: source { .outputTime },
+        targetNodeProperties: target { .eventTime, .eventFeatures },
+        sourceNodeLabels: ['Entity'],
+        targetNodeLabels: ['Event'],
+        relationshipType: type(rel)
+      })
+
+algorithms:
+  - name: fastpath
+    graph: events
+    mode: mutate
+    mutate_property: fp_embeddings
+    parameters:
+      base_node_label: Entity
+      event_node_label: Event
+      event_features: eventFeatures
+      time_node_property: eventTime
+      output_time_property: outputTime
+      dimension: 8
+      num_elapsed_times: 30
+      max_elapsed_time: 730
+      smoothing_rate: 0.9
+      smoothing_window: 2
+      decay_factor: 0.0
+      random_seed: 42
+
+writebacks:
+  - graph: events
+    node_properties: [fp_embeddings]

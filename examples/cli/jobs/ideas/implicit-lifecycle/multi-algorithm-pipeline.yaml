@@ -1,0 +1,40 @@
+# Chain multiple algorithms on one graph, mixing write/mutate modes.
+# `social` is projected before the first algorithm and dropped after the last.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - graph: social
+    cypher: |
+      MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+
+algorithms:
+  - name: wcc
+    graph: social
+    mode: mutate
+    mutate_property: componentId
+    parameters:
+      concurrency: 4
+
+  - name: dijkstra
+    graph: social
+    mode: write
+    write_property: distanceFromSource
+    parameters:
+      source_node: 42
+
+  - name: louvain
+    graph: social
+    mode: mutate
+    mutate_property: community
+
+writebacks:
+  - graph: social
+    node_properties: [community]

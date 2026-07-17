@@ -1,0 +1,33 @@
+# Louvain community detection on a social network (Person -KNOWS-> Person).
+# Flat pipeline: one step per line, no wrapper key, no nested `mode` object.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - graph: social
+    cypher: |
+      MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+
+pipeline:
+  - name: Project the social graph
+    project_graph: social
+
+  - name: Run Louvain
+    algorithm: louvain
+    graph: social
+    mode: mutate
+    mutate_property: community
+
+  - name: Write community back to the database
+    write_back: social
+    node_properties: [community]
+
+  - name: Drop the graph
+    drop_graph: social

@@ -1,0 +1,49 @@
+# Project two independent graphs and run a different algorithm on each - both
+# stay in session at once, since neither is dropped until the very end.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - graph: social
+    cypher: |
+      MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+  - graph: pages
+    cypher: |
+      MATCH (source:Page)-[rel:LINKS]->(target:Page)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+
+pipeline:
+  - project: social
+
+  - project: pages
+
+  - run:
+      - algorithm: louvain
+        graph: social
+        mode: mutate
+        mutate_property: community
+      - algorithm: pageRank
+        graph: pages
+        mode: mutate
+        mutate_property: pagerank
+        parameters:
+          max_iterations: 20
+
+  - writebacks:
+      - graph: social
+        node_properties: [community]
+      - graph: pages
+        node_properties: [pagerank]
+
+  - drop: [social, pages]

@@ -1,0 +1,31 @@
+# Louvain community detection on a social network (Person -KNOWS-> Person).
+# Pipeline of typed blocks (project/run/writebacks/drop) that can interleave freely.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - graph: social
+    cypher: |
+      MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+
+pipeline:
+  - project: social
+
+  - run:
+      - algorithm: louvain
+        graph: social
+        mode: mutate
+        mutate_property: community
+
+  - writebacks:
+      - graph: social
+        node_properties: [community]
+
+  - drop: [social]

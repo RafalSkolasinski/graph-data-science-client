@@ -1,0 +1,33 @@
+# PageRank on a web graph (Page -LINKS-> Page): important pages get high rank.
+# Recreation of jobs/web-graph-pagerank.yaml using the "pipeline of typed blocks" format.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - graph: pages
+    cypher: |
+      MATCH (source:Page)-[rel:LINKS]->(target:Page)
+      RETURN gds.graph.project.remote(source, target, {
+        sourceNodeLabels: labels(source),
+        targetNodeLabels: labels(target),
+        relationshipType: type(rel)
+      })
+
+pipeline:
+  - project: pages
+
+  - run:
+      - algorithm: pageRank
+        graph: pages
+        mode: mutate
+        mutate_property: pagerank
+        parameters:
+          max_iterations: 20
+
+  - writebacks:
+      - graph: pages
+        node_properties: [pagerank]
+
+  - drop: [pages]

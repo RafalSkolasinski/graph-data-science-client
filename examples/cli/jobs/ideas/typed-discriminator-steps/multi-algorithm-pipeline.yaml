@@ -1,0 +1,64 @@
+# Chain multiple algorithms on one graph, mixing write/mutate modes.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - cypher:
+      graph: "social"
+      query: |
+        MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+        RETURN gds.graph.project.remote(source, target, {
+          sourceNodeLabels: labels(source),
+          targetNodeLabels: labels(target),
+          relationshipType: type(rel)
+        })
+
+steps:
+  - name: "Project the social graph"
+    type: project
+    params:
+      graph: "social"
+
+  - name: "Mutate weakly connected components"
+    type: algorithm
+    params:
+      algorithm: "wcc"
+      graph: "social"
+      configuration:
+        concurrency: 4
+      mode:
+        name: "mutate"
+        property: "componentId"
+
+  - name: "Write shortest-path distance from a fixed source"
+    type: algorithm
+    params:
+      algorithm: "dijkstra"
+      graph: "social"
+      configuration:
+        source_node: 42
+      mode:
+        name: "write"
+        property: "distanceFromSource"
+
+  - name: "Mutate with Louvain communities"
+    type: algorithm
+    params:
+      algorithm: "louvain"
+      graph: "social"
+      mode:
+        name: "mutate"
+        property: "community"
+
+  - name: "Write community back to the database"
+    type: write-back
+    params:
+      graph: "social"
+      node_properties: ["community"]
+
+  - name: "Drop the graph"
+    type: drop_graph
+    params:
+      graph: "social"

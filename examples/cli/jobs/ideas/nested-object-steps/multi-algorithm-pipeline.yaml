@@ -1,0 +1,59 @@
+# Chain multiple algorithms on one graph, mixing write/mutate modes.
+# Steps are ordered: write-back only happens after Louvain has mutated the graph.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - cypher:
+      graph: "social"
+      query: |
+        MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+        RETURN gds.graph.project.remote(source, target, {
+          sourceNodeLabels: labels(source),
+          targetNodeLabels: labels(target),
+          relationshipType: type(rel)
+        })
+
+steps:
+  - name: "Project the social graph"
+    project:
+      graph: "social"
+
+  - name: "Mutate weakly connected components"
+    algorithm:
+      name: "wcc"
+      graph: "social"
+      configuration:
+        concurrency: 4
+      mode:
+        name: "mutate"
+        property: "componentId"
+
+  - name: "Write shortest-path distance from a fixed source"
+    algorithm:
+      name: "dijkstra"
+      graph: "social"
+      configuration:
+        source_node: 42
+      mode:
+        name: "write"
+        property: "distanceFromSource"
+
+  - name: "Mutate with Louvain communities"
+    algorithm:
+      name: "louvain"
+      graph: "social"
+      mode:
+        name: "mutate"
+        property: "community"
+
+  - name: "Write community back to the database"
+    write_back:
+      graph: "social"
+      node_properties: ["community"]
+
+  - name: "Drop the graph"
+    drop:
+      graph: "social"

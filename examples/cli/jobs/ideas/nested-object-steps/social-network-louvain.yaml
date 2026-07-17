@@ -1,0 +1,39 @@
+# Louvain community detection on a social network (Person -KNOWS-> Person).
+# Nested-object steps: each step is a name plus one type key with all its fields.
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - cypher:
+      graph: "social"
+      query: |
+        MATCH (source:Person)-[rel:KNOWS]->(target:Person)
+        RETURN gds.graph.project.remote(source, target, {
+          sourceNodeLabels: labels(source),
+          targetNodeLabels: labels(target),
+          relationshipType: type(rel)
+        })
+
+steps:
+  - name: "Project the social graph"
+    project:
+      graph: "social"
+
+  - name: "Run Louvain"
+    algorithm:
+      name: "louvain"
+      graph: "social"
+      mode:
+        name: "mutate"
+        property: "community"
+
+  - name: "Write community back to the database"
+    write_back:
+      graph: "social"
+      node_properties: ["community"]
+
+  - name: "Drop the graph"
+    drop:
+      graph: "social"

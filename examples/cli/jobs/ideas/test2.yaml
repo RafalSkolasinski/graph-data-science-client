@@ -1,0 +1,40 @@
+projections:
+  - native:
+      graph: g1
+  - native:
+      graph: g2
+  - cypher:
+      graph: g3
+      query: |
+        MATCH (n) RETURN n
+steps:
+  - name: Project the graph
+    project_graph: g1
+
+  - name: Run WCC
+    algorithm: wcc
+    graph: g1
+    configuration:
+      concurrency: 4
+    mode: stream
+
+  - name: Run Dijkstra
+    algorithm: dijkstra
+    graph: g1
+    configuration:
+      source_node: 42
+    mode:
+      name: write
+      property: prop
+
+  - name: Run PageRank
+    algorithm: pagerank
+    graph: g1
+    configuration:
+      max_iterations: 20
+    mode:
+      name: mutate
+      property: prop
+
+  - name: Drop the graph
+    drop_graph: g1

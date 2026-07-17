@@ -1,0 +1,42 @@
+# Job for the built-in `homogeneous` graph (Node -REL-> Node).
+#   gds database upload homogeneous --overwrite
+session:
+  name: gds-examples
+  memory: 2GB
+  ttl_minutes: 30
+
+projections:
+  - cypher:
+      graph: "homogeneous"
+      query: |
+        MATCH (source:Node)-[rel:REL]->(target:Node)
+        RETURN gds.graph.project.remote(source, target, {
+          sourceNodeLabels: labels(source),
+          targetNodeLabels: labels(target),
+          relationshipType: type(rel),
+          relationshipProperties: rel { .weight }
+        })
+
+steps:
+  - name: "Project the homogeneous graph"
+    project:
+      graph: "homogeneous"
+
+  - name: "Run PageRank weighted by relationship weight"
+    algorithm:
+      name: "pageRank"
+      graph: "homogeneous"
+      configuration:
+        relationship_weight_property: "weight"
+      mode:
+        name: "mutate"
+        property: "pagerank"
+
+  - name: "Write pagerank back to the database"
+    write_back:
+      graph: "homogeneous"
+      node_properties: ["pagerank"]
+
+  - name: "Drop the graph"
+    drop:
+      graph: "homogeneous"
